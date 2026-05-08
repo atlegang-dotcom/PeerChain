@@ -1,63 +1,90 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Wallet, ChevronDown, Copy, ExternalLink, LogOut } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { useEffect, useState } from "react";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { useWalletModal } from "@solana/wallet-adapter-react-ui";
+import { LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { Button } from "@/components/ui/button";
+import { Wallet, LogOut, ExternalLink } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
 
 export function ConnectWallet() {
-  const [connected, setConnected] = useState(false)
-  const [walletAddress] = useState("9b3d1f4e2a7c8b9d0e1f2a3b4c5d6e7f8a9b0c1d")
+  const { connection } = useConnection();
+  const { publicKey, disconnect, connected } = useWallet();
+  const { setVisible } = useWalletModal();
+  const [balance, setBalance] = useState<number | null>(null);
 
-  const truncatedAddress = `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
+  // Fetch balance when public key changes
+  useEffect(() => {
+    if (!publicKey) return;
+
+    const fetchBalance = async () => {
+      const updatedBalance = await connection.getBalance(publicKey);
+      setBalance(updatedBalance / LAMPORTS_PER_SOL);
+    };
+
+    fetchBalance();
+
+    // Optional: Subscribe to account changes for real-time balance updates
+    const subscriptionId = connection.onAccountChange(publicKey, (account) => {
+      setBalance(account.lamports / LAMPORTS_PER_SOL);
+    });
+
+    return () => {
+      connection.removeAccountChangeListener(subscriptionId);
+    };
+  }, [publicKey, connection]);
+
+  // Abbreviate the address (e.g., 9b3d...x8y2)
+  const abbreviatedAddress = publicKey
+    ? `${publicKey.toBase58().slice(0, 4)}...${publicKey.toBase58().slice(-4)}`
+    : "";
 
   if (!connected) {
     return (
       <Button
-        onClick={() => setConnected(true)}
-        className="bg-primary text-primary-foreground hover:bg-primary/90 glow-green"
+        onClick={() => setVisible(true)}
+        className="bg-solana text-charcoal hover:bg-solana/90 font-mono font-bold transition-all shadow-[0_0_15px_rgba(20,241,149,0.3)]"
       >
         <Wallet className="mr-2 h-4 w-4" />
-        Connect Wallet
+        CONNECT WALLET
       </Button>
-    )
+    );
   }
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="glass border-primary/30 hover:border-primary/50">
+        <Button variant="outline" className="font-mono border-solana/50 hover:border-solana bg-charcoal/50 backdrop-blur-sm">
           <div className="flex items-center gap-2">
-            <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-            <span className="font-mono text-sm">{truncatedAddress}</span>
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            <div className="h-2 w-2 rounded-full bg-solana animate-pulse" />
+            <span className="text-solana">{balance?.toFixed(3) || "0.000"} SOL</span>
+            <span className="text-muted-foreground">|</span>
+            <span>{abbreviatedAddress}</span>
           </div>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="glass w-56">
-        <DropdownMenuItem className="cursor-pointer">
-          <Copy className="mr-2 h-4 w-4" />
-          Copy Address
-        </DropdownMenuItem>
-        <DropdownMenuItem className="cursor-pointer">
-          <ExternalLink className="mr-2 h-4 w-4" />
-          View on Explorer
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
+      <DropdownMenuContent align="end" className="w-56 bg-charcoal border-solana/20 text-foreground">
         <DropdownMenuItem
-          className="cursor-pointer text-destructive"
-          onClick={() => setConnected(false)}
+          className="cursor-pointer focus:bg-solana/10"
+          onClick={() => window.open(`https://explorer.solana.com/address/${publicKey?.toBase58()}?cluster=devnet`, '_blank')}
+        >
+          <ExternalLink className="mr-2 h-4 w-4 text-solana" />
+          <span>View on Explorer</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          className="cursor-pointer focus:bg-destructive/10 text-destructive"
+          onClick={disconnect}
         >
           <LogOut className="mr-2 h-4 w-4" />
-          Disconnect
+          <span>Disconnect</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }
