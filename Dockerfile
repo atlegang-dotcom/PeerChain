@@ -5,13 +5,17 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 FROM base AS deps
 WORKDIR /app
 COPY pnpm-lock.yaml package.json ./
-RUN pnpm install --no-frozen-lockfile --frozen-lockfile=false
+RUN pnpm install --no-frozen-lockfile
 
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_PUBLIC_SOLANA_RPC_URL=https://api.devnet.solana.com
+ENV NEXT_PUBLIC_PROGRAM_ID=Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS
+ENV NEXT_PUBLIC_WALLET_AUTOCONNECT=true
+ENV NEXT_PUBLIC_ELEVENLABS_VOICE_ID=21m00Tcm4TlvDq8ikWAM
 RUN pnpm build
 
 FROM base AS runner

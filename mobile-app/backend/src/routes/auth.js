@@ -4,29 +4,55 @@ const nacl = require('tweetnacl');
 const bs58 = require('bs58');
 const jwt = require('jsonwebtoken');
 const { PublicKey } = require('@solana/web3.js');
+const db = require('../config/database');
 
-// Store nonces temporarily (use Redis in production)
 const nonces = new Map();
+const JWT_SECRET = process.env.JWT_SECRET || 'peerchain-dev-secret-change-in-production';
 
-// Step 1: Frontend requests a nonce for a wallet address
+async function getNonce(walletAddress) {
+  const result = await db.query('SELECT nonce FROM nonces WHERE wallet_address = $1', [walletAddress]);
+  if (result && result.rows.length > 0) return result.rows[0].nonce;
+  return nonces.get(walletAddress);
+}
+
+async function setNonce(walletAddress, nonce) {
+  const result = await db.query(
+    'INSERT INTO nonces (wallet_address, nonce) VALUES ($1, $2) ON CONFLICT (wallet_address) DO UPDATE SET nonce = $2, created_at = NOW()',
+    [walletAddress, nonce]
+  );
+  if (!result) nonces.set(walletAddress, nonce);
+}
+
+async function deleteNonce(walletAddress) {
+  await db.query('DELETE FROM nonces WHERE wallet_address = $1', [walletAddress]);
+  nonces.delete(walletAddress);
+}
+
+async function upsertUser(walletAddress) {
+  const result = await db.query(
+    'INSERT INTO users (wallet_address, last_login) VALUES ($1, NOW()) ON CONFLICT (wallet_address) DO UPDATE SET last_login = NOW()',
+    [walletAddress]
+  );
+  if (!result) {
+    console.log('User login (in-memory mode):', walletAddress);
+  }
+}
+
 router.post('/nonce', (req, res) => {
   const { walletAddress } = req.body;
-
   if (!walletAddress) {
     return res.status(400).json({ error: 'Wallet address required' });
   }
 
-  const nonce = `Sign this to login to StudyStream: ${Date.now()}`;
-  nonces.set(walletAddress, nonce);
-
+  const nonce = `Sign this to login to PeerChain: ${Date.now()}`;
+  setNonce(walletAddress, nonce);
   res.json({ nonce });
 });
 
-// Step 2: Frontend returns the signed nonce, backend verifies it
-router.post('/verify', (req, res) => {
+router.post('/verify', async (req, res) => {
   const { walletAddress, signature } = req.body;
+  const nonce = await getNonce(walletAddress);
 
-  const nonce = nonces.get(walletAddress);
   if (!nonce) {
     return res.status(400).json({ error: 'No nonce found. Request one first.' });
   }
@@ -37,25 +63,17 @@ router.post('/verify', (req, res) => {
     const publicKeyBytes = new PublicKey(walletAddress).toBytes();
 
     const isValid = nacl.sign.detached.verify(
-      messageBytes,
-      signatureBytes,
-      publicKeyBytes
+      messageBytes, signatureBytes, publicKeyBytes
     );
 
     if (!isValid) {
       return res.status(401).json({ error: 'Invalid signature' });
     }
 
-    // Clean up nonce after use
-    nonces.delete(walletAddress);
+    await deleteNonce(walletAddress);
+    await upsertUser(walletAddress);
 
-    // Issue JWT
-    const token = jwt.sign(
-      { walletAddress },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    );
-
+    const token = jwt.sign({ walletAddress }, JWT_SECRET, { expiresIn: '7d' });
     res.json({ token, walletAddress });
 
   } catch (err) {
