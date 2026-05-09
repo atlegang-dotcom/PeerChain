@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: peerchain
+    env: node
+    region: ohio
+    plan: free
+    buildCommand: pnpm install --no-frozen-lockfile && pnpm build
+    startCommand: pnpm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: NEXT_PUBLIC_SOLANA_RPC_URL
+        value: https://api.devnet.solana.com
+      - key: NEXT_PUBLIC_PROGRAM_ID
+        value: Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS
+      - key: NEXT_PUBLIC_WALLET_AUTOCONNECT
+        value: "true"
+      - key: NEXT_PUBLIC_ELEVENLABS_VOICE_ID
+        value: 21m00Tcm4TlvDq8ikWAM
+      - key: ELEVENLABS_API_KEY
+        sync: false
