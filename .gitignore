@@ -12,6 +12,8 @@ target/
 **/*.so
 **/*.json
 !anchor/programs/**/*.json
+!**/package.json
+!**/package-lock.json
 .anchor/
 test-ledger/
 
