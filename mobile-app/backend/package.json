@@ -2,7 +2,7 @@
   "name": "peerchain-backend",
   "version": "1.0.0",
   "description": "StudyStream Node.js backend — PeerChain protocol",
-  "main": "src/index.js",
+  "main": "index.js",
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js"
