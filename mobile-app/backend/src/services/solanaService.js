@@ -1,37 +1,34 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// SOLANA SERVICE — thin adapter
-// All contract logic now lives in contractService.js
-// This file preserves the original function names so no routes break.
-// ─────────────────────────────────────────────────────────────────────────────
+const { PublicKey } = require('@solana/web3.js');
+const { connection } = require('../config/solana');
 
-const contract = require('./contractService');
+// Check that a wallet address is valid and exists on-chain
+async function verifyWallet(walletAddress) {
+  try {
+    const pubKey = new PublicKey(walletAddress);
+    const accountInfo = await connection.getAccountInfo(pubKey);
+    return { valid: true, exists: accountInfo !== null };
+  } catch (err) {
+    return { valid: false, exists: false };
+  }
+}
 
-// Re-export everything from contractService under the original names
-// routes import from here — nothing changes in routes/sessions.js etc.
+// Get SOL balance for a wallet
+async function getWalletBalance(walletAddress) {
+  const pubKey = new PublicKey(walletAddress);
+  const balance = await connection.getBalance(pubKey);
+  return balance / 1e9; // Convert lamports to SOL
+}
 
-const verifyWallet               = contract.verifyWallet;
-const confirmTransaction         = contract.confirmTransaction;
+// Confirm a transaction actually landed on-chain
+async function confirmTransaction(signature) {
+  try {
+    const result = await connection.getTransaction(signature, {
+      commitment: 'confirmed'
+    });
+    return result !== null;
+  } catch (err) {
+    return false;
+  }
+}
 
-const recordSessionOnChain       = contract.recordSession;
-const updateReputationOnChain    = contract.updateReputation;
-const getReputationFromChain     = contract.getReputation;
-const submitFundingRequestOnChain= contract.submitFundingRequest;
-const evaluateFundingEligibility = contract.evaluateFundingEligibility;
-const mintAchievementRecord      = contract.mintAchievementRecord;
-
-// Extra helpers now available to routes if needed
-const getSessionsForWallet       = contract.getSessionsForWallet;
-const getFundingRequestsForWallet= contract.getFundingRequestsForWallet;
-
-module.exports = {
-  verifyWallet,
-  confirmTransaction,
-  recordSessionOnChain,
-  updateReputationOnChain,
-  getReputationFromChain,
-  submitFundingRequestOnChain,
-  evaluateFundingEligibility,
-  mintAchievementRecord,
-  getSessionsForWallet,
-  getFundingRequestsForWallet
-};
+module.exports = { verifyWallet, getWalletBalance, confirmTransaction };

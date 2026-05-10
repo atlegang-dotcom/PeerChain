@@ -6,8 +6,8 @@ import bs58 from 'bs58';
 
 const APP_IDENTITY = {
   name: 'PeerChain',
-  uri: '<YOUR_APP_URI>', // e.g., 'https://peerchain.network'
-  icon: '<YOUR_FAVICON_URL>' // e.g., 'favicon.ico'
+  uri: 'https://localhost',
+  icon: 'https://localhost/favicon.ico'
 };
 
 export async function connectWallet() {

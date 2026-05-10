@@ -5,12 +5,13 @@ const bs58 = require('bs58');
 const jwt = require('jsonwebtoken');
 const { PublicKey } = require('@solana/web3.js');
 
-// Temporary nonce store — replace with Supabase in production
+// Store nonces temporarily (use Redis in production)
 const nonces = new Map();
 
-// Step 1: Request a nonce to sign
+// Step 1: Frontend requests a nonce for a wallet address
 router.post('/nonce', (req, res) => {
   const { walletAddress } = req.body;
+
   if (!walletAddress) {
     return res.status(400).json({ error: 'Wallet address required' });
   }
@@ -21,7 +22,7 @@ router.post('/nonce', (req, res) => {
   res.json({ nonce });
 });
 
-// Step 2: Verify the signed nonce and issue JWT
+// Step 2: Frontend returns the signed nonce, backend verifies it
 router.post('/verify', (req, res) => {
   const { walletAddress, signature } = req.body;
 
@@ -45,8 +46,10 @@ router.post('/verify', (req, res) => {
       return res.status(401).json({ error: 'Invalid signature' });
     }
 
+    // Clean up nonce after use
     nonces.delete(walletAddress);
 
+    // Issue JWT
     const token = jwt.sign(
       { walletAddress },
       process.env.JWT_SECRET,
@@ -54,6 +57,7 @@ router.post('/verify', (req, res) => {
     );
 
     res.json({ token, walletAddress });
+
   } catch (err) {
     res.status(400).json({ error: 'Verification failed', details: err.message });
   }
