@@ -22,7 +22,7 @@ router.post('/nonce', (req, res) => {
 });
 
 // Step 2: Verify the signed nonce and issue JWT
-router.post('/verify', (req, res) => {
+router.post('/verify', async (req, res) => {
   const { walletAddress, signature } = req.body;
   const nonce = await getNonce(walletAddress);
 
