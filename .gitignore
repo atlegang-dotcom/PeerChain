@@ -14,6 +14,8 @@ target/
 !anchor/programs/**/*.json
 !**/package.json
 !**/package-lock.json
+!vercel.json
+!tsconfig.test.json
 .anchor/
 test-ledger/
 
@@ -25,3 +27,5 @@ test-ledger/
 
 # OS Files
 .DS_Store
+.vercel
+.env*.local

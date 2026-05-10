@@ -23,22 +23,22 @@ import {
 const navItems = [
   {
     label: "Command Center",
-    href: "/",
+    href: "/dashboard",
     icon: LayoutDashboard,
   },
   {
     label: "Learning Hub",
-    href: "/learning",
+    href: "/dashboard/learning",
     icon: GraduationCap,
   },
   {
     label: "Funding Vaults",
-    href: "/funding",
+    href: "/dashboard/funding",
     icon: Wallet,
   },
   {
     label: "Audio Briefs",
-    href: "/audio",
+    href: "/dashboard/audio",
     icon: AudioWaveform,
   },
 ]

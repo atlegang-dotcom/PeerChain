@@ -1,0 +1,7 @@
+process.env.SOLANA_RPC_URL = "https://api.devnet.solana.com"
+process.env.NEXT_PUBLIC_SOLANA_RPC_URL = "https://api.devnet.solana.com"
+process.env.NEXT_PUBLIC_PROGRAM_ID = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+process.env.NEXT_PUBLIC_WALLET_AUTOCONNECT = "true"
+process.env.ELEVENLABS_API_KEY = ""
+process.env.NEXT_PUBLIC_ELEVENLABS_VOICE_ID = "21m00Tcm4TlvDq8ikWAM"
+process.env.NODE_ENV = "test"
