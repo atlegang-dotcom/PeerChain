@@ -4,7 +4,6 @@ const nacl = require('tweetnacl');
 const bs58 = require('bs58');
 const jwt = require('jsonwebtoken');
 const { PublicKey } = require('@solana/web3.js');
-const db = require('../config/database');
 
 // Temporary nonce store — replace with Supabase in production
 const nonces = new Map();
@@ -16,16 +15,17 @@ router.post('/nonce', (req, res) => {
     return res.status(400).json({ error: 'Wallet address required' });
   }
 
-  const nonce = `Sign this to login to PeerChain: ${Date.now()}`;
-  setNonce(walletAddress, nonce);
+  const nonce = `Sign this to login to StudyStream: ${Date.now()}`;
+  nonces.set(walletAddress, nonce);
+
   res.json({ nonce });
 });
 
 // Step 2: Verify the signed nonce and issue JWT
-router.post('/verify', async (req, res) => {
+router.post('/verify', (req, res) => {
   const { walletAddress, signature } = req.body;
-  const nonce = await getNonce(walletAddress);
 
+  const nonce = nonces.get(walletAddress);
   if (!nonce) {
     return res.status(400).json({ error: 'No nonce found. Request one first.' });
   }
@@ -36,7 +36,9 @@ router.post('/verify', async (req, res) => {
     const publicKeyBytes = new PublicKey(walletAddress).toBytes();
 
     const isValid = nacl.sign.detached.verify(
-      messageBytes, signatureBytes, publicKeyBytes
+      messageBytes,
+      signatureBytes,
+      publicKeyBytes
     );
 
     if (!isValid) {
